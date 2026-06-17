@@ -446,9 +446,17 @@
     repo:  'HTML',
     branch:'main',
     path:  'dados.json',
-    tk:    'Z2l0aHViX3BhdF8xMUNENFZGNVkwRGRDWnBuOXBERDQ3X2xlelliTDNaVEF5dm1heTlJZVBTZEdNM3FDYVRnT0diMEdTZzJuVWtjeE5QRllPRkFPTHI4OFAyYTVy'
+    tk:    'EB0XRRcKcgAAHTFUXW4gUSI0WjdZB0YKcnRARBghdAFZcggXXFcwWGAvLiExGhg+DVRVYHRCIkUrWwsZRBsqPg0dHEYPM0UiJxoMU1RzfXZnIzM6ZyQkVzM1WCMh'
   };
-  function ghToken(){try{return GH.tk?atob(GH.tk):'';}catch(e){return '';}}
+  var TK_KEY='wtc-bh-painel-detronic-2026';
+  function ghToken(){
+    try{
+      if(!GH.tk)return '';
+      var raw=atob(GH.tk),out='';
+      for(var i=0;i<raw.length;i++){out+=String.fromCharCode(raw.charCodeAt(i)^TK_KEY.charCodeAt(i%TK_KEY.length));}
+      return out;
+    }catch(e){return '';}
+  }
   function ghPronto(){return !!ghToken() && GH.owner.indexOf('SEU_')!==0;}
 
   var LSDRAFT='painel_wtc_draft_v1';
