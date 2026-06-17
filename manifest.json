@@ -1,0 +1,24 @@
+{
+  "name": "WTC Belo Horizonte — Painel de Andamentos",
+  "short_name": "WTC Painel",
+  "description": "Painel de acompanhamento gerencial da SPE WTC Belo Horizonte",
+  "start_url": "./login.html",
+  "display": "standalone",
+  "background_color": "#0d1b2e",
+  "theme_color": "#0d1b2e",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
