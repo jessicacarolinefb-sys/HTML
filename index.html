@@ -227,7 +227,6 @@
     <button id="btAll" class="tool">🔽 Expandir anexos</button>
     <button id="btEdit" class="tool">✏️ Editar</button>
     <button id="btReset" class="tool">↩️ Restaurar</button>
-    <button id="btDown" class="tool primary">⬇️ Baixar painel</button>
     <button id="btSair" class="tool sair" title="Encerrar sessão">🚪 Sair</button>
   </div>
 </header>
@@ -694,30 +693,6 @@
       window.location.replace('login.html');
     }
   };
-  document.getElementById('btDown').onclick=function(){
-    dadosEl.textContent=JSON.stringify(DADOS,null,2);
-    // limpa DOM dinâmico antes de serializar
-    var savedGrid=gridEl.innerHTML;
-    var savedKpis=document.getElementById('kpis').innerHTML;
-    var savedLeg=document.getElementById('donut-legend').innerHTML;
-    var savedMs=document.getElementById('mini-stats').innerHTML;
-    var wasEdit=document.body.classList.contains('editing');
-    gridEl.innerHTML='';
-    document.getElementById('kpis').innerHTML='';
-    document.getElementById('donut-legend').innerHTML='';
-    document.getElementById('mini-stats').innerHTML='';
-    document.body.classList.remove('editing');
-    var html='<!DOCTYPE html>\n'+document.documentElement.outerHTML;
-    gridEl.innerHTML=savedGrid;
-    document.getElementById('kpis').innerHTML=savedKpis;
-    document.getElementById('donut-legend').innerHTML=savedLeg;
-    document.getElementById('mini-stats').innerHTML=savedMs;
-    if(wasEdit)document.body.classList.add('editing');
-    var blob=new Blob([html],{type:'text/html;charset=utf-8'});
-    var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='Painel_Andamentos_WTC_BH.html';
-    document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(a.href);},2000);
-  };
-
   render();
 })();
 </script>
