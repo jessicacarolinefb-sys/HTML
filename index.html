@@ -227,6 +227,7 @@
     <button id="btAll" class="tool">🔽 Expandir anexos</button>
     <button id="btEdit" class="tool">✏️ Editar</button>
     <button id="btReset" class="tool">↩️ Restaurar</button>
+    <button id="btDown" class="tool primary">💾 Salvar</button>
     <button id="btSair" class="tool sair" title="Encerrar sessão">🚪 Sair</button>
   </div>
 </header>
@@ -434,10 +435,28 @@
 
 <script>
 (function(){
-  var KEY='painel_wtc_bh_v3';
+  /* ======== CONFIGURAÇÃO DO GITHUB (salvamento on-line) ========
+     Preencha os 3 valores abaixo para ativar o "Salvar":
+       owner  = seu usuário do GitHub
+       repo   = nome do repositório
+       tk     = token de acesso codificado (preenchido na configuração)
+     Enquanto não estiver preenchido, o painel funciona em modo leitura. */
+  var GH = {
+    owner: 'jessicacarolinefb-sys',
+    repo:  'HTML',
+    branch:'main',
+    path:  'dados.json',
+    tk:    'Z2l0aHViX3BhdF8xMUNENFZGNVkwRGRDWnBuOXBERDQ3X2xlelliTDNaVEF5dm1heTlJZVBTZEdNM3FDYVRnT0diMEdTZzJuVWtjeE5QRllPRkFPTHI4OFAyYTVy'
+  };
+  function ghToken(){try{return GH.tk?atob(GH.tk):'';}catch(e){return '';}}
+  function ghPronto(){return !!ghToken() && GH.owner.indexOf('SEU_')!==0;}
+
+  var LSDRAFT='painel_wtc_draft_v1';
   var gridEl=document.getElementById('grid');
   var dadosEl=document.getElementById('dados');
-  var DADOS=carregar();
+  var DADOS={titulo:'',itens:[]};
+  var REMOTE_SHA=null;
+  var dirty=false;
   var edit=false;
   var allOpen=false;
   var currentView='andamentos';
@@ -448,11 +467,71 @@
     vermelho:{cor:'#e74c3c',rotulo:'Pendente / requer ação'}
   };
 
-  function carregar(){
-    try{var ls=localStorage.getItem(KEY);if(ls)return JSON.parse(ls);}catch(e){}
+  async function loadData(){
+    var token=ghToken();
+    // 1) API do GitHub: versão sempre atual + sha necessário p/ salvar
+    if(ghPronto()){
+      try{
+        var api='https://api.github.com/repos/'+GH.owner+'/'+GH.repo+'/contents/'+encodeURIComponent(GH.path)+'?ref='+GH.branch+'&t='+Date.now();
+        var r=await fetch(api,{headers:{Authorization:'token '+token,Accept:'application/vnd.github+json'},cache:'no-store'});
+        if(r.ok){var j=await r.json();REMOTE_SHA=j.sha;return JSON.parse(b64decode(j.content));}
+      }catch(e){}
+    }
+    // 2) arquivo publicado no site (GitHub Pages)
+    try{
+      var r2=await fetch(GH.path+'?v='+Date.now(),{cache:'no-store'});
+      if(r2.ok)return await r2.json();
+    }catch(e){}
+    // 3) fallback final: dados embutidos no HTML
     return JSON.parse(dadosEl.textContent);
   }
-  function persist(){try{localStorage.setItem(KEY,JSON.stringify(DADOS));}catch(e){}}
+  function persist(){dirty=true;atualizarBotaoSalvar();try{localStorage.setItem(LSDRAFT,JSON.stringify(DADOS));}catch(e){}}
+
+  function b64encode(str){return btoa(unescape(encodeURIComponent(str)));}
+  function b64decode(b64){return decodeURIComponent(escape(atob((b64||'').replace(/\s/g,''))));}
+
+  function atualizarBotaoSalvar(){
+    var b=document.getElementById('btDown');
+    if(!b)return;
+    b.textContent=dirty?'💾 Salvar *':'💾 Salvar';
+    b.title=ghPronto()?(dirty?'Há alterações não enviadas':'Tudo salvo'):'Salvamento on-line não configurado';
+  }
+
+  async function salvarRemoto(){
+    var token=ghToken();
+    if(!ghPronto()){
+      alert('Salvamento on-line ainda não configurado.\n\nFalta inserir o usuário/repositório do GitHub e o token no início do código (bloco "CONFIGURAÇÃO DO GITHUB").');
+      return;
+    }
+    var b=document.getElementById('btDown');
+    var antes=b.textContent;b.disabled=true;b.textContent='Salvando...';
+    try{
+      var api='https://api.github.com/repos/'+GH.owner+'/'+GH.repo+'/contents/'+encodeURIComponent(GH.path);
+      // pega o sha mais recente p/ evitar conflito
+      try{
+        var g=await fetch(api+'?ref='+GH.branch+'&t='+Date.now(),{headers:{Authorization:'token '+token,Accept:'application/vnd.github+json'},cache:'no-store'});
+        if(g.ok){var gj=await g.json();REMOTE_SHA=gj.sha;}
+      }catch(e){}
+      var json=JSON.stringify(DADOS,null,2);
+      var body={message:'Atualiza painel — '+new Date().toLocaleString('pt-BR'),content:b64encode(json),branch:GH.branch};
+      if(REMOTE_SHA)body.sha=REMOTE_SHA;
+      var r=await fetch(api,{method:'PUT',headers:{Authorization:'token '+token,Accept:'application/vnd.github+json','Content-Type':'application/json'},body:JSON.stringify(body)});
+      if(r.ok){
+        var rj=await r.json();
+        if(rj.content&&rj.content.sha)REMOTE_SHA=rj.content.sha;
+        dirty=false;try{localStorage.removeItem(LSDRAFT);}catch(e){}
+        b.disabled=false;b.textContent='✓ Salvo!';
+        setTimeout(function(){atualizarBotaoSalvar();},1800);
+      }else{
+        var er=await r.json().catch(function(){return {};});
+        b.disabled=false;b.textContent=antes;
+        alert('Não foi possível salvar.\n\n'+(er.message||('Erro '+r.status))+'\n\nSe for erro de permissão, o token pode ter expirado ou perdido acesso ao repositório.');
+      }
+    }catch(err){
+      b.disabled=false;b.textContent=antes;
+      alert('Erro de conexão ao salvar: '+(err.message||err));
+    }
+  }
   function el(t,c,h){var e=document.createElement(t);if(c)e.className=c;if(h!=null)e.innerHTML=h;return e;}
   function esc(s){return (s==null?'':String(s)).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
 
@@ -686,14 +765,38 @@
   };
   document.getElementById('btEdit').onclick=function(){edit=!edit;render();window.scrollTo({top:0,behavior:'smooth'});};
   document.getElementById('dt').addEventListener('click',function(){if(!edit)return;var v=prompt('Última atualização:',DADOS.atualizacao||'');if(v!=null){DADOS.atualizacao=v;persist();render();}});
-  document.getElementById('btReset').onclick=function(){if(confirm('Descartar suas edições e voltar ao conteúdo original do arquivo?')){try{localStorage.removeItem(KEY);}catch(e){}DADOS=JSON.parse(dadosEl.textContent);render();}};
+  document.getElementById('btReset').onclick=async function(){
+    if(confirm('Descartar alterações não salvas e recarregar a versão publicada?')){
+      try{localStorage.removeItem(LSDRAFT);}catch(e){}
+      DADOS=await loadData();dirty=false;atualizarBotaoSalvar();render();
+    }
+  };
   document.getElementById('btSair').onclick=function(){
     if(confirm('Encerrar a sessão e voltar para a tela de login?')){
       try{localStorage.removeItem('wtc_logado');}catch(e){}
       window.location.replace('login.html');
     }
   };
-  render();
+  document.getElementById('btDown').onclick=salvarRemoto;
+
+  // avisa se sair com alterações não salvas
+  window.addEventListener('beforeunload',function(e){if(dirty){e.preventDefault();e.returnValue='';}});
+
+  // boot: carrega os dados compartilhados e desenha
+  loadData().then(function(d){
+    DADOS=d||{titulo:'',itens:[]};
+    // recupera rascunho local não enviado, se houver
+    try{
+      var dr=localStorage.getItem(LSDRAFT);
+      if(dr){
+        if(confirm('Há alterações locais que ainda não foram salvas on-line.\n\nOK = recuperar essas alterações\nCancelar = descartar e usar a versão publicada')){
+          DADOS=JSON.parse(dr);dirty=true;
+        }else{localStorage.removeItem(LSDRAFT);}
+      }
+    }catch(e){}
+    atualizarBotaoSalvar();
+    render();
+  });
 })();
 </script>
 
