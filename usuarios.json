@@ -1,6 +1,6 @@
 {
   "usuarios": [
-    { "login": "teste", "senha": "123456" },
+    { "login": "adm", "senha": "painelwtc" },
     { "login": "", "senha": "" },
     { "login": "", "senha": "" },
     { "login": "", "senha": "" },
