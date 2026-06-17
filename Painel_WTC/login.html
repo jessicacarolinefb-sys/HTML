@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WTC Belo Horizonte — Login</title>
+<style>
+  :root{
+    --bg1:#0d1b2e; --bg2:#1b3a5b; --card:#15273f;
+    --gold:#c9a24b; --gold-soft:rgba(201,162,75,.15);
+    --txt:#eef3f9; --muted:#9fb0c4;
+    --line:rgba(201,162,75,.25);
+    --bad:#e74c3c; --ok:#2ecc71;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;min-height:100vh;font-family:"Segoe UI",system-ui,-apple-system,Arial,sans-serif;color:var(--txt);
+    background:linear-gradient(135deg,var(--bg1),var(--bg2));
+    display:flex;align-items:center;justify-content:center;padding:24px;
+  }
+  .login{
+    width:100%;max-width:380px;background:var(--card);border:1px solid rgba(255,255,255,.06);
+    border-top:4px solid var(--gold);border-radius:14px;padding:34px 30px 28px;
+    box-shadow:0 18px 50px rgba(0,0,0,.45);animation:up .45s cubic-bezier(.2,.9,.3,1) both;
+  }
+  @keyframes up{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+  .brand{color:var(--gold);font-size:12px;letter-spacing:3px;text-transform:uppercase;font-weight:700;text-align:center}
+  h1{margin:6px 0 4px;font-size:22px;letter-spacing:.5px;text-align:center}
+  .sub{color:var(--muted);font-size:13px;text-align:center;margin-bottom:24px}
+  label{display:block;font-size:12px;color:var(--gold);text-transform:uppercase;letter-spacing:1px;margin:14px 0 6px;font-weight:700}
+  input{
+    width:100%;background:#0f2036;border:1px solid var(--line);color:var(--txt);
+    border-radius:9px;padding:11px 13px;font-size:14px;font-family:inherit;outline:none;transition:.15s;
+  }
+  input:focus{border-color:var(--gold);box-shadow:0 0 0 3px var(--gold-soft)}
+  button{
+    width:100%;margin-top:22px;background:var(--gold);color:#11243b;border:none;
+    padding:12px 16px;border-radius:9px;font-size:15px;font-weight:700;cursor:pointer;
+    font-family:inherit;transition:.18s;
+  }
+  button:hover{transform:translateY(-1px);box-shadow:0 8px 20px rgba(201,162,75,.4)}
+  button:disabled{opacity:.6;cursor:wait;transform:none;box-shadow:none}
+  .msg{
+    margin-top:14px;padding:10px 12px;border-radius:9px;font-size:13px;text-align:center;
+    display:none;
+  }
+  .msg.err{background:rgba(231,76,60,.15);border:1px solid rgba(231,76,60,.4);color:#ffb7af;display:block}
+  .msg.ok{background:rgba(46,204,113,.15);border:1px solid rgba(46,204,113,.4);color:#b6f0cf;display:block}
+  .ft{text-align:center;color:var(--muted);font-size:11px;margin-top:18px}
+</style>
+</head>
+<body>
+
+<form class="login" id="form" autocomplete="on">
+  <div class="brand">WTC Belo Horizonte · SPE</div>
+  <h1>Acessar painel</h1>
+  <div class="sub">Entre com seu login e senha</div>
+
+  <label for="login">Login</label>
+  <input id="login" type="text" autocomplete="username" required autocapitalize="none" spellcheck="false">
+
+  <label for="senha">Senha</label>
+  <input id="senha" type="password" autocomplete="current-password" required>
+
+  <button id="btn" type="submit">Entrar</button>
+
+  <div class="msg" id="msg"></div>
+
+  <div class="ft">Documento interno · SPE WTC</div>
+</form>
+
+<script>
+(function(){
+  var form=document.getElementById('form');
+  var loginEl=document.getElementById('login');
+  var senhaEl=document.getElementById('senha');
+  var msgEl=document.getElementById('msg');
+  var btn=document.getElementById('btn');
+
+  function showMsg(texto,tipo){
+    msgEl.className='msg '+tipo;
+    msgEl.textContent=texto;
+  }
+
+  form.addEventListener('submit',async function(e){
+    e.preventDefault();
+    var login=(loginEl.value||'').trim();
+    var senha=senhaEl.value||'';
+    if(!login||!senha){showMsg('Preencha login e senha.','err');return;}
+
+    btn.disabled=true;btn.textContent='Verificando...';
+    msgEl.className='msg';msgEl.textContent='';
+
+    try{
+      var resp=await fetch('usuarios.json?v='+Date.now(),{cache:'no-store'});
+      if(!resp.ok)throw new Error('Não foi possível carregar a lista de usuários.');
+      var dados=await resp.json();
+      var lista=(dados&&dados.usuarios)||[];
+      var ok=lista.some(function(u){
+        return (u.login||'').trim()===login && (u.senha||'')===senha;
+      });
+      if(ok){
+        try{localStorage.setItem('wtc_logado',login);}catch(_){}
+        showMsg('Acesso liberado. Redirecionando...','ok');
+        setTimeout(function(){window.location.href='index.html';},600);
+      }else{
+        showMsg('Login ou senha inválidos.','err');
+        btn.disabled=false;btn.textContent='Entrar';
+      }
+    }catch(err){
+      showMsg('Erro ao validar: '+(err.message||err),'err');
+      btn.disabled=false;btn.textContent='Entrar';
+    }
+  });
+})();
+</script>
+
+</body>
+</html>

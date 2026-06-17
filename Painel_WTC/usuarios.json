@@ -1,0 +1,9 @@
+{
+  "usuarios": [
+    { "login": "teste", "senha": "123456" },
+    { "login": "", "senha": "" },
+    { "login": "", "senha": "" },
+    { "login": "", "senha": "" },
+    { "login": "", "senha": "" }
+  ]
+}
