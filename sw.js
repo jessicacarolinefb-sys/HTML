@@ -1,4 +1,4 @@
-var CACHE='wtc-painel-v1';
+var CACHE='wtc-painel-v2';
 var ASSETS=['./','./login.html','./index.html','./icon-192.png','./icon-512.png'];
 
 self.addEventListener('install',function(e){
@@ -16,7 +16,9 @@ self.addEventListener('activate',function(e){
 });
 
 self.addEventListener('fetch',function(e){
-  if(e.request.url.indexOf('usuarios.json')!==-1){
+  var u=e.request.url;
+  // sempre da rede (nunca do cache): credenciais, dados compartilhados e API do GitHub
+  if(u.indexOf('usuarios.json')!==-1 || u.indexOf('dados.json')!==-1 || u.indexOf('api.github.com')!==-1){
     e.respondWith(fetch(e.request));
     return;
   }
